@@ -90,41 +90,27 @@ var spotifyApi = new SpotifyWebApi({
   app.use(express.urlencoded({ extended: true }));
 
 
-app.get('/', function(req, res) {
-  res.sendFile(__dirname + "/" + "/public/index.html");
-
-});
-
-
-// app.get('/playing', function(req, res) {
-
-//   spotifyApi.getMyCurrentPlayingTrack()
-//   .then(function(data) {
-//     console.log(data.body.item.name)  
-//     console.log(data.body.item.artists[0].name)
-//     console.log(data.body.item.album.images[0].url) 
-//   }, function(err) {
-//     console.log('Something went wrong!', err);
-//   });;
-
-let zmienna = "helloword;";
-
-
-app.post("/request", (req, res) => {
-    spotifyApi.pause()
-    .then(function() {
-      console.log('Playback paused');
-    }, function(err) {
-      //if the user making the request is non-premium, a 403 FORBIDDEN response code will be returned
-      console.log('Something went wrong!', err);
-    });
-})
- 
-
-
+  app.get('/', function(req, res) {
+    res.sendFile(__dirname + "/" + "/public/index.html");
+  });
   
-app.listen(8888, () =>
-console.log(
-  'HTTP Server up. Now go to http://localhost:8888/login in your browser.'
-)
-);
+  
+  app.get('/data', function(req, res) {
+    spotifyApi.getMyCurrentPlayingTrack()
+    .then(function(data) {
+      res.send(data)
+      console.log(data.body.item.album.images[0].url)
+      //console.log(data.body.item.item)  // get album cover, not working yet
+      
+    }, function(err) {
+      console.log('Something went wrong!', err);
+    });;
+
+  });
+  
+    
+  app.listen(8888, () =>
+  console.log(
+    'HTTP Server up. Now go to http://localhost:8888/login in your browser.'
+  )
+  );
