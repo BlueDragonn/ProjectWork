@@ -1,6 +1,7 @@
 var SpotifyWebApi = require('spotify-web-api-node');
 var bodyParser = require('body-parser');
 const express = require('express');
+const { SpotifyPlaybackSDK } = require("spotify-playback-sdk-node");
 
 const scopes = [
     'ugc-image-upload',
@@ -57,12 +58,12 @@ var spotifyApi = new SpotifyWebApi({
         spotifyApi.setAccessToken(access_token);
         spotifyApi.setRefreshToken(refresh_token);
   
-        console.log('access_token:', access_token);
+        //console.log('access_token:', access_token);
        // console.log('refresh_token:', refresh_token);
   
-        console.log(
-          `Sucessfully retreived access token. Expires in ${expires_in} s.`
-        );
+        //console.log(
+        //  `Sucessfully retreived access token. Expires in ${expires_in} s.`
+        //);
         res.redirect('/');
         
         
@@ -74,43 +75,88 @@ var spotifyApi = new SpotifyWebApi({
           console.log('access_token:', access_token);
           spotifyApi.setAccessToken(access_token);
         }, expires_in / 2 * 1000);
-
+        
       })
       .catch(error => {
         console.error('Error getting Tokens:', error);
         res.send(`Error getting Tokens: ${error}`);
       });
       
-  });
-  
-  
-  //////////////////////////////////////////////
-  const path = require('path');       // for opening .html files after entering url
-  app.use(express.static('public'))
-  app.use(express.urlencoded({ extended: true }));
+    });
+    
+    
+    //////////////////////////////////////////////
+    const path = require('path');       // for opening .html files after entering url
+    app.use(express.static('public'))
+    app.use(express.urlencoded({ extended: true }));
+    
+    app.get('/', function(req, res) {
+      res.sendFile(__dirname + "/" + "/public/index.html");
+      res.redirect('/request');
+    });
+
+    var topArtists;
+    var ifTopArtistGot=0;
+    
+    app.post("/request", (req, res) => {
+      spotifyApi.getMyCurrentPlayingTrack()
+  .then(function(data) {
+    var currentlyPlaying= data.body.item.id;
 
 
-  app.get('/', function(req, res) {
-    res.sendFile(__dirname + "/" + "/public/index.html");
+      spotifyApi.getMyTopArtists()
+    .then(function(data) {
+      if(ifTopArtistGot==0){
+      topArtists = [data.body.items[0].id, data.body.items[1].id, topArtists2 = data.body.items[2].id, topArtists3 = data.body.items[3].id];
+      ifTopArtistGot=1;
+      }
+        spotifyApi.getRecommendations({
+          min_energy: 0.4,
+          seed_artists: [...topArtists],
+          min_popularity: 50
+        })
+        .then(function(data) {
+          let recommendations = data.body;
+          //console.log(recommendations);
+         topArtists.push(currentlyPlaying);
+          topArtists.shift();
+
+          console.log("\n");
+          console.log(...topArtists);
+          spotifyApi.play
+         
+
+
+        }, function(err) {
+          console.log("Something went wrong!", err);
+        });
+
+      }, function(err) {
+        console.log('Something went wrong!', err);
+      }); 
+
+
+
+  }, function(err) {
+    console.log('Something went wrong!', err);
   });
-  
+
+  });
   
   app.get('/data', function(req, res) {
     spotifyApi.getMyCurrentPlayingTrack()
     .then(function(data) {
       res.send(data)
-      console.log(data.body.item.album.images[0].url)
-      //console.log(data.body.item.item)  // get album cover, not working yet
-      
     }, function(err) {
       console.log('Something went wrong!', err);
     });;
-
+    
   });
   
-    
+
   app.listen(8888, () =>
   console.log(
     'HTTP Server up. Now go to http://localhost:8888/login in your browser.'
-  )
-  );
+  ));
+
+spotifyApi.p
