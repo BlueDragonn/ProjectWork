@@ -1,7 +1,6 @@
 var SpotifyWebApi = require('spotify-web-api-node');
 var bodyParser = require('body-parser');
 const express = require('express');
-const { SpotifyPlaybackSDK } = require("spotify-playback-sdk-node");
 
 const scopes = [
     'ugc-image-upload',
@@ -95,54 +94,64 @@ var spotifyApi = new SpotifyWebApi({
       res.redirect('/request');
     });
 
-    var topArtists;
-    var ifTopArtistGot=0;
-    
-    app.post("/request", (req, res) => {
-      spotifyApi.getMyCurrentPlayingTrack()
-  .then(function(data) {
-    var currentlyPlaying= data.body.item.id;
 
-
-      spotifyApi.getMyTopArtists()
-    .then(function(data) {
-      if(ifTopArtistGot==0){
-      topArtists = [data.body.items[0].id, data.body.items[1].id, topArtists2 = data.body.items[2].id, topArtists3 = data.body.items[3].id];
-      ifTopArtistGot=1;
+    app.get('/auth_token', function(req, res) {
+      let token = spotifyApi.getAccessToken();
+      let user = {  
+        access_token: token,
       }
-        spotifyApi.getRecommendations({
-          min_energy: 0.4,
-          seed_artists: [...topArtists],
-          min_popularity: 50
-        })
-        .then(function(data) {
-          let recommendations = data.body;
-          //console.log(recommendations);
-         topArtists.push(currentlyPlaying);
-          topArtists.shift();
+      res.send(user);
+    });
 
-          console.log("\n");
-          console.log(...topArtists);
-          spotifyApi.play
-         
+    var topArtists;
 
 
-        }, function(err) {
-          console.log("Something went wrong!", err);
-        });
+////////////////////////////////////////////////
 
-      }, function(err) {
-        console.log('Something went wrong!', err);
-      }); 
+var recommendationSeed = [];
+var isSeedGenerated=0;
 
+app.all("/request", (req, res) => {
+  spotifyApi.getMyTopTracks()
+  .then(function(data) {
+    let myTopTracks = data.body.items;
 
+    if(isSeedGenerated==0){
+      recommendationSeed = [
+        myTopTracks[0].id,
+        myTopTracks[1].id,
+        myTopTracks[2].id,
+        myTopTracks[3].id,
+        myTopTracks[4].id,
+      ]
+      isSeedGenerated=1;
+    }
+    console.log(...recommendationSeed);
 
+    spotifyApi.getRecommendations({
+      min_energy: 0.4,
+      seed_tracks: [...recommendationSeed],
+      min_popularity: 40
+    })
+  .then(function(data) {
+    let recommendations = data.body;
+    //console.log(recommendations);
+    var inexOfSong = Math.floor(Math.random() * 3);
+    let track = {
+      trackToPlay: recommendations.tracks[inexOfSong].uri
+    }
+    
+    res.send(track);
+
+  }, function(err) {
+    console.log("Something went wrong!", err);
+  });
   }, function(err) {
     console.log('Something went wrong!', err);
   });
+});
 
-  });
-  
+  //////////////////////////////////////////////
   app.get('/data', function(req, res) {
     spotifyApi.getMyCurrentPlayingTrack()
     .then(function(data) {
@@ -150,13 +159,25 @@ var spotifyApi = new SpotifyWebApi({
     }, function(err) {
       console.log('Something went wrong!', err);
     });;
-    
   });
-  
+
+  app.all('/right', function(req, res) { // adding song to seed
+    spotifyApi.getMyCurrentPlayingTrack()
+    .then(function(data) {
+
+
+      recommendationSeed.shift();
+      recommendationSeed.push(data.body.item.id);
+
+      //console.log(...recommendationSeed);
+    }, function(err) {
+      console.log('Something went wrong!', err);
+    });;
+  });
+
+
 
   app.listen(8888, () =>
   console.log(
     'HTTP Server up. Now go to http://localhost:8888/login in your browser.'
   ));
-
-spotifyApi.p
